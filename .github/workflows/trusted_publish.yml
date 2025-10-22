@@ -30,8 +30,10 @@ on:
 permissions:
   id-token: write   # npm provenance (OIDC)
 
+
 jobs:
   release:
+    environment: npm_trust
     runs-on: ubuntu-latest
 
     steps:
