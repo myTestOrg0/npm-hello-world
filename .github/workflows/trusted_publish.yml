@@ -106,8 +106,5 @@ jobs:
           echo "Will publish with dist-tag: $(grep '^tag=' "$GITHUB_OUTPUT" | cut -d= -f2)"
 
       - name: Publish to npm (Trusted Publishing)
-        # NPM_TOKEN не нужен: аутентификация через OIDC (permissions.id-token: write)
         run: |
-          # --access public нужен при первом паблише публичного пакета
-          # Уберите флаг, если пакет приватный или publishConfig.access уже задан в package.json
-          npm publish --access public --provenance --tag "${{ steps.dist.outputs.tag }}"
+          npm publish --access public --tag "${{ steps.dist.outputs.tag }}"
