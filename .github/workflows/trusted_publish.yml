@@ -58,10 +58,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Print package name (debug)
-        run: |
-          echo "Package name: $(npm pkg get name | tr -d '\")"
-
       - name: Install deps
         run: npm ci
 
