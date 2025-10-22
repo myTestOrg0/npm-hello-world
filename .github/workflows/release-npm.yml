@@ -114,10 +114,3 @@ jobs:
         run: |
           # --access public: оставьте, если пакет публичный; уберите для приватного
           npm publish --access public --provenance --tag "${{ steps.dist.outputs.tag }}"
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.bump.outputs.tag }}
-          name: Release ${{ steps.bump.outputs.tag }}
-          generate_release_notes: true
