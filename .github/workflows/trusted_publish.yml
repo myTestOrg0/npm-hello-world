@@ -37,6 +37,7 @@ concurrency:
 
 jobs:
   release:
+    environment: npm_trusted
     runs-on: ubuntu-latest
 
     steps:
