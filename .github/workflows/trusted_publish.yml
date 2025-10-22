@@ -1,22 +1,68 @@
-name: Publish Package
+name: Manual Release to npm
 
 on:
   workflow_dispatch:
+    inputs:
+      release_type:
+        description: "Тип релиза (npm version)"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prepatch
+          - preminor
+          - premajor
+          - prerelease
+          - exact
+        default: patch
+      version:
+        description: "Точная версия (для release_type=exact, например 1.2.3)"
+        required: false
+        type: string
+      preid:
+        description: "Пререлизный идентификатор (для pre* типов, напр. rc, beta, alpha)"
+        required: false
+        type: string
+        default: rc
 
 permissions:
-  id-token: write  # Required for OIDC
-  contents: read
+  contents: write   # пуш коммита/тега и создание релиза
+  id-token: write   # npm provenance (OIDC)
+
+concurrency:
+  group: manual-release
+  cancel-in-progress: false
 
 jobs:
-  publish:
+  release:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
+          fetch-depth: 0  # нужны теги и история
+          persist-credentials: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+          cache: "npm"
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build
+        run: npm run build --if-present
 
       - name: Bump version + create tag
         id: bump
@@ -59,10 +105,7 @@ jobs:
           fi
           echo "Will publish with dist-tag: $(cat $GITHUB_OUTPUT)"
 
-
-      # Ensure npm 11.5.1 or later is installed
-      - name: Update npm
-        run: npm install -g npm@latest
-      - run: npm ci
-      - run: npm run build --if-present
-      - run: npm publish --access public --provenance --tag "${{ steps.dist.outputs.tag }}"
+      - name: Publish to npm
+        run: |
+          # --access public: оставьте, если пакет публичный; уберите для приватного
+          npm publish --access public --provenance --tag "${{ steps.dist.outputs.tag }}"
