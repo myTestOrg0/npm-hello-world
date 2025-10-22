@@ -54,6 +54,9 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           cache: "npm"
 
+      - name: Use latest npm (required for Trusted Publishing)
+        run: npm -v && npm install -g npm@latest && npm -v
+
       - name: Git identity
         run: |
           git config user.name "github-actions[bot]"
