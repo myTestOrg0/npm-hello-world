@@ -28,12 +28,7 @@ on:
         default: rc
 
 permissions:
-  contents: write   # пуш коммита/тега и создание релиза
   id-token: write   # npm provenance (OIDC)
-
-concurrency:
-  group: manual-release
-  cancel-in-progress: false
 
 jobs:
   release:
@@ -53,59 +48,14 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           cache: "npm"
 
-      - name: Configure git identity
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
       - name: Install deps
         run: npm ci
 
       - name: Build
         run: npm run build --if-present
 
-      - name: Bump version + create tag
-        id: bump
-        env:
-          RELEASE_TYPE: ${{ github.event.inputs.release_type }}
-          PREID: ${{ github.event.inputs.preid }}
-          EXACT_VER: ${{ github.event.inputs.version }}
-        run: |
-          set -euo pipefail
-          if [ "$RELEASE_TYPE" = "exact" ]; then
-            if [ -z "${EXACT_VER:-}" ]; then
-              echo "version input is required when release_type=exact" >&2
-              exit 1
-            fi
-            npm version "$EXACT_VER" -m "chore(release): %s [skip ci]"
-          elif [[ "$RELEASE_TYPE" == pre* || "$RELEASE_TYPE" == "prerelease" ]]; then
-            npm version "$RELEASE_TYPE" --preid "${PREID:-rc}" -m "chore(release): %s [skip ci]"
-          else
-            npm version "$RELEASE_TYPE" -m "chore(release): %s [skip ci]"
-          fi
-
-          # Получаем новую версию и тег
-          NEW_VER=$(node -p "require('./package.json').version")
-          echo "version=$NEW_VER" >> "$GITHUB_OUTPUT"
-          echo "tag=v$NEW_VER" >> "$GITHUB_OUTPUT"
-
-      - name: Push commit and tag
-        run: |
-          git push origin HEAD
-          git push origin "${{ steps.bump.outputs.tag }}"
-
-      - name: Determine npm dist-tag
-        id: dist
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          if [[ "$VERSION" == *"-"* ]]; then
-            echo "tag=next" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag=latest" >> "$GITHUB_OUTPUT"
-          fi
-          echo "Will publish with dist-tag: $(cat $GITHUB_OUTPUT)"
 
       - name: Publish to npm
         run: |
           # --access public: оставьте, если пакет публичный; уберите для приватного
-          npm publish --access public --provenance --tag "${{ steps.dist.outputs.tag }}"
+          npm publish --access public --provenance --tag "${{ github.event.inputs.version }}"
