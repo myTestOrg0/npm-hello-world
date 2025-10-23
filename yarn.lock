@@ -1,0 +1,9 @@
+
+__metadata:
+  version: 6
+
+"sample_function_4_npm@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "sample_function_4_npm@workspace:."
+  languageName: unknown
+  linkType: soft
