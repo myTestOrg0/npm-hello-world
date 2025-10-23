@@ -1,4 +1,4 @@
-name: Manual Release to npm (trusted)
+name: Manual Release to npm with yarn (trusted)
 
 on:
   workflow_dispatch:
