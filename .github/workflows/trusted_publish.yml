@@ -109,4 +109,4 @@ jobs:
 
       - name: Publish to npm (Trusted Publishing)
         run: |
-          npm publish --access public --tag "${{ steps.dist.outputs.tag }}"
+          yarn npm publish --access public --tag "${{ steps.dist.outputs.tag }}"
