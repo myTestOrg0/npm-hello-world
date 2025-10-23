@@ -1,0 +1,115 @@
+name: Manual Release to npm (trusted)
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: "Тип релиза (npm version)"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prepatch
+          - preminor
+          - premajor
+          - prerelease
+          - exact
+        default: patch
+      version:
+        description: "Точная версия (для release_type=exact, например 1.2.3)"
+        required: false
+        type: string
+      preid:
+        description: "Пререлизный идентификатор (для pre* типов, напр. rc, beta, alpha)"
+        required: false
+        type: string
+        default: rc
+
+permissions:
+  contents: write   # нужно для пуша коммита/тега (и для релиза, если добавите)
+  id-token: write   # нужно для Trusted Publishing (provenance OIDC)
+
+concurrency:
+  group: manual-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: npm_trusted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Setup Node.js (npm registry + OIDC)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+          cache: "npm"
+
+      - name: Use latest npm (required for Trusted Publishing)
+        run: npm -v && npm install -g npm@latest && npm -v
+
+      - name: Git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build
+        run: npm run build --if-present
+
+      - name: Bump version + tag
+        id: bump
+        env:
+          RELEASE_TYPE: ${{ github.event.inputs.release_type }}
+          PREID: ${{ github.event.inputs.preid }}
+          EXACT_VER: ${{ github.event.inputs.version }}
+        run: |
+          set -euo pipefail
+          if [ "$RELEASE_TYPE" = "exact" ]; then
+            if [ -z "${EXACT_VER:-}" ]; then
+              echo "version input is required when release_type=exact" >&2
+              exit 1
+            fi
+            npm version "$EXACT_VER" -m "chore(release): %s [skip ci]"
+          elif [[ "$RELEASE_TYPE" == pre* || "$RELEASE_TYPE" == "prerelease" ]]; then
+            npm version "$RELEASE_TYPE" --preid "${PREID:-rc}" -m "chore(release): %s [skip ci]"
+          else
+            npm version "$RELEASE_TYPE" -m "chore(release): %s [skip ci]"
+          fi
+
+          NEW_VER=$(node -p "require('./package.json').version")
+          echo "version=$NEW_VER" >> "$GITHUB_OUTPUT"
+          echo "tag=v$NEW_VER" >> "$GITHUB_OUTPUT"
+
+      - name: Push commit and tag
+        run: |
+          git push origin HEAD
+          git push origin "${{ steps.bump.outputs.tag }}"
+
+      - name: Determine npm dist-tag
+        id: dist
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [[ "$VERSION" == *"-"* ]]; then
+            echo "tag=next" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Will publish with dist-tag: $(grep '^tag=' "$GITHUB_OUTPUT" | cut -d= -f2)"
+     
+      - run: corepack enable
+      - run: corepack prepare yarn@4.4.0 --activate   # <-- нужная версия
+
+      - name: Publish to npm (Trusted Publishing)
+        run: |
+          npm publish --access public --tag "${{ steps.dist.outputs.tag }}"
