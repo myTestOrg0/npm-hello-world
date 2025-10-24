@@ -1,6 +1,6 @@
 {
   "name": "sample_function_4_npm",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "description": "Hello World sample app",
   "main": "index.js",
   "scripts": {
