@@ -103,7 +103,5 @@ jobs:
       - run: yarn install
 
       - name: Publish to npm (Trusted Publishing)
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.TOKEN }}
         run: |
-          yarn publish --tag "${{ steps.dist.outputs.tag }}"
+          yarn multi-semantic-release
