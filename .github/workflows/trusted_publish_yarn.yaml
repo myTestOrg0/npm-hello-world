@@ -105,5 +105,6 @@ jobs:
       - name: Publish to npm (Trusted Publishing)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
         run: |
           yarn semantic-release
