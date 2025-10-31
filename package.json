@@ -1,6 +1,6 @@
 {
   "name": "sample_function_4_npm",
-  "version": "1.0.25",
+  "version": "1.0.26",
   "description": "Hello World sample app",
   "main": "index.js",
   "devDependencies": {
