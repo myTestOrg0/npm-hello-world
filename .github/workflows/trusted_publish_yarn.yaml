@@ -2,30 +2,7 @@ name: Manual Release to npm with yarn (trusted)
 
 on:
   workflow_dispatch:
-    inputs:
-      release_type:
-        description: "Тип релиза (npm version)"
-        required: true
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-          - prepatch
-          - preminor
-          - premajor
-          - prerelease
-          - exact
-        default: patch
-      version:
-        description: "Точная версия (для release_type=exact, например 1.2.3)"
-        required: false
-        type: string
-      preid:
-        description: "Пререлизный идентификатор (для pre* типов, напр. rc, beta, alpha)"
-        required: false
-        type: string
-        default: rc
+    
 
 permissions:
   contents: write   # нужно для пуша коммита/тега (и для релиза, если добавите)
@@ -51,7 +28,7 @@ jobs:
       - name: Update npm (OIDC)
         run: npm i -g npm@latest
 
-      - run: yarn install --frozen-lockfile
+      - run: yarn install 
 
       - name: Semantic Release (OIDC, без NPM_TOKEN)
         env:
