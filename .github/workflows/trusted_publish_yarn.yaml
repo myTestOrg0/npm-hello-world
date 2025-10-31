@@ -107,4 +107,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
         run: |
+          npm install --save-dev @semantic-release/npm@latest
           yarn semantic-release
