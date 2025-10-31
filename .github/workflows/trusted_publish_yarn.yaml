@@ -104,4 +104,4 @@ jobs:
 
       - name: Publish to npm (Trusted Publishing)
         run: |
-          yarn multi-semantic-release
+          yarn semantic-release
