@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'yarn'   # кеш npm тут не критичен, но не мешает
+          cache: 'yarn'
 
       - name: Use Yarn 4.4.0 via Corepack
         run: |
@@ -27,7 +27,6 @@ jobs:
           corepack prepare yarn@4.4.0 --activate
           yarn --version
 
-      # Чтобы Yarn 4 не включал PnP без файлов в репо — создадим временную .yarnrc.yml
       - name: Create temporary Yarn config (nodeLinker)
         run: |
           printf "nodeLinker: node-modules\nenableGlobalCache: true\n" > .yarnrc.yml
@@ -40,21 +39,16 @@ jobs:
 
       - name: Clean any npm auth (avoid token mode)
         run: |
-          rm -f .npmrc ~/.npmrc
+          rm -f .npmrc ~/.npmrc || true
           echo "no .npmrc left"
 
-      # Yarn 4 в CI по умолчанию делает immutable install => отключаем, чтобы не падать с YN0028
-      - name: Install deps (no immutable to avoid YN0028)
+      - name: Install deps (disable immutable to avoid YN0028 until lock is updated)
         env:
           YARN_ENABLE_IMMUTABLE_INSTALLS: "false"
-        run: |
-          yarn install
-          node -v
-          yarn --version
+        run: yarn install
 
       - name: Semantic Release (OIDC, no NPM token)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_CONFIG_PROVENANCE: "true"   # при trusted publishing не обязателен, но не мешает
-        run: |
-          yarn semantic-release
+          NPM_CONFIG_PROVENANCE: "true"
+        run: yarn dlx semantic-release
