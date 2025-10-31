@@ -13,34 +13,48 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'      # ← БЕЗ registry-url
-          cache: 'yarn'
+          node-version: '20'
+          cache: 'yarn'   # кеш npm тут не критичен, но не мешает
 
-      - name: Use Yarn 4 (если нужно)
+      - name: Use Yarn 4.4.0 via Corepack
         run: |
           corepack enable
           corepack prepare yarn@4.4.0 --activate
+          yarn --version
 
-      - name: Update npm (для OIDC)
-        run: npm i -g npm@latest
+      # Чтобы Yarn 4 не включал PnP без файлов в репо — создадим временную .yarnrc.yml
+      - name: Create temporary Yarn config (nodeLinker)
+        run: |
+          printf "nodeLinker: node-modules\nenableGlobalCache: true\n" > .yarnrc.yml
 
-      - name: Clean npm auth
+      - name: Update npm (for OIDC trusted publishing)
+        run: |
+          npm -v
+          npm i -g npm@latest
+          npm -v
+
+      - name: Clean any npm auth (avoid token mode)
         run: |
           rm -f .npmrc ~/.npmrc
-          echo "NPM userconfig is now empty"
-        # альтернативно можно «заглушить» конфиг:
-        # env:
-        #   NPM_CONFIG_USERCONFIG: /dev/null
+          echo "no .npmrc left"
 
-      - run: yarn install  # или --immutable, если lock актуален
+      # Yarn 4 в CI по умолчанию делает immutable install => отключаем, чтобы не падать с YN0028
+      - name: Install deps (no immutable to avoid YN0028)
+        env:
+          YARN_ENABLE_IMMUTABLE_INSTALLS: "false"
+        run: |
+          yarn install
+          node -v
+          yarn --version
 
-      - name: Semantic Release (OIDC, без NPM_TOKEN)
+      - name: Semantic Release (OIDC, no NPM token)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_CONFIG_PROVENANCE: true   # не обязательно, но не мешает
-          # Nикаких NODE_AUTH_TOKEN / NPM_TOKEN!
-        run: yarn semantic-release
+          NPM_CONFIG_PROVENANCE: "true"   # при trusted publishing не обязателен, но не мешает
+        run: |
+          yarn semantic-release
