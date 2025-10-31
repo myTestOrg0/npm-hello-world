@@ -103,5 +103,7 @@ jobs:
       - run: yarn install
 
       - name: Publish to npm (Trusted Publishing)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           yarn semantic-release
