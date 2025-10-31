@@ -1,16 +1,11 @@
 name: Manual Release to npm with yarn (trusted)
 
 on:
-  workflow_dispatch:
-    
+  workflow_dispatch: {}
 
 permissions:
-  contents: write   # нужно для пуша коммита/тега (и для релиза, если добавите)
-  id-token: write   # нужно для Trusted Publishing (provenance OIDC)
-
-concurrency:
-  group: manual-release
-  cancel-in-progress: false
+  contents: write
+  id-token: write
 
 jobs:
   release:
@@ -22,16 +17,30 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: '20'      # ← БЕЗ registry-url
+          cache: 'yarn'
 
-      - name: Update npm (OIDC)
+      - name: Use Yarn 4 (если нужно)
+        run: |
+          corepack enable
+          corepack prepare yarn@4.4.0 --activate
+
+      - name: Update npm (для OIDC)
         run: npm i -g npm@latest
 
-      - run: yarn install 
+      - name: Clean npm auth
+        run: |
+          rm -f .npmrc ~/.npmrc
+          echo "NPM userconfig is now empty"
+        # альтернативно можно «заглушить» конфиг:
+        # env:
+        #   NPM_CONFIG_USERCONFIG: /dev/null
+
+      - run: yarn install  # или --immutable, если lock актуален
 
       - name: Semantic Release (OIDC, без NPM_TOKEN)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_CONFIG_PROVENANCE: true
+          NPM_CONFIG_PROVENANCE: true   # не обязательно, но не мешает
+          # Nикаких NODE_AUTH_TOKEN / NPM_TOKEN!
         run: yarn semantic-release
