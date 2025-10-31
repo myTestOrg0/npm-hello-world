@@ -1,9 +1,9 @@
 {
   "name": "sample_function_4_npm",
-  "version": "1.0.23",
+  "version": "1.0.24",
   "description": "Hello World sample app",
   "main": "index.js",
-  "devDependencies":{
+  "devDependencies": {
     "@qiwi/multi-semantic-release": "7.1.1"
   },
   "scripts": {
