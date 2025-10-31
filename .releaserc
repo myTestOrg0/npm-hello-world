@@ -1,1 +1,10 @@
-{ "branches": ["main"] }
+{
+  "branches": ["main"],
+  "repositoryUrl": "https://github.com/myTestOrg0/npm-hello-world.git",
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    "@semantic-release/npm",
+    "@semantic-release/github"
+  ]
+}
